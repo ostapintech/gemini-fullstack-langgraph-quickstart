@@ -6,37 +6,30 @@ from langchain_core.runnables import RunnableConfig
 
 
 class Configuration(BaseModel):
-    """The configuration for the agent."""
+    """The configuration for the local research agent."""
 
     query_generator_model: str = Field(
         default="groq:llama-3.3-70b-versatile",
         metadata={
-            "description": "The name of the language model to use for the agent's query generation."
-        },
-    )
-
-    reflection_model: str = Field(
-        default="groq:llama-3.3-70b-versatile",
-        metadata={
-            "description": "The name of the language model to use for the agent's reflection."
+            "description": "The name of the language model to use for generating search keywords."
         },
     )
 
     answer_model: str = Field(
         default="groq:llama-3.3-70b-versatile",
         metadata={
-            "description": "The name of the language model to use for the agent's answer."
+            "description": "The name of the language model to use for the final technical answer."
         },
     )
 
     number_of_initial_queries: int = Field(
-        default=3,
-        metadata={"description": "The number of initial search queries to generate."},
+        default=2, # Зменшено до 2 для економії токенів у лінійному графі
+        metadata={"description": "The number of search queries (keyword sets) to generate."},
     )
 
-    max_research_loops: int = Field(
-        default=2,
-        metadata={"description": "The maximum number of research loops to perform."},
+    local_dir: str = Field(
+        default="/Users/ostapzherebtsov/Desktop/langgraph_old_docs",
+        metadata={"description": "The directory to search for local .md files."}
     )
 
     @classmethod
@@ -48,13 +41,13 @@ class Configuration(BaseModel):
             config["configurable"] if config and "configurable" in config else {}
         )
 
-        # Get raw values from environment or config
+        # Отримуємо значення з системних змінних (наприклад, LOCAL_DIR) або з конфігурації LangGraph
         raw_values: dict[str, Any] = {
             name: os.environ.get(name.upper(), configurable.get(name))
             for name in cls.model_fields.keys()
         }
 
-        # Filter out None values
+        # Відфільтровуємо None значення, щоб використати default з Field
         values = {k: v for k, v in raw_values.items() if v is not None}
 
         return cls(**values)
